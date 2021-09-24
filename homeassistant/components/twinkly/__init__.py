@@ -1,5 +1,6 @@
 """The twinkly component."""
 
+from homeassistant.helpers.entity_component import EntityComponent
 import twinkly_client
 
 from homeassistant.config_entries import ConfigEntry
@@ -23,7 +24,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         host, async_get_clientsession(hass)
     )
 
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
     return True
 

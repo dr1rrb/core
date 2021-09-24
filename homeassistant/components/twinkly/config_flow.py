@@ -40,6 +40,10 @@ class TwinklyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 device_info = await twinkly_client.TwinklyClient(host).get_device_info()
 
+            except (asyncio.TimeoutError, ClientError):
+                errors[CONF_HOST] = "cannot_connect"
+
+            else:
                 await self.async_set_unique_id(device_info[DEV_ID])
                 self._abort_if_unique_id_configured()
 
@@ -52,9 +56,6 @@ class TwinklyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_ENTRY_MODEL: device_info[DEV_MODEL],
                     },
                 )
-            except (asyncio.TimeoutError, ClientError) as err:
-                _LOGGER.info("Cannot reach Twinkly '%s' (client)", host, exc_info=err)
-                errors[CONF_HOST] = "cannot_connect"
 
         return self.async_show_form(
             step_id="user", data_schema=Schema(schema), errors=errors

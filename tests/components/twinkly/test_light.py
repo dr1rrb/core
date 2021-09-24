@@ -26,68 +26,50 @@ from tests.components.twinkly import (
 )
 
 
-async def test_missing_client(hass: HomeAssistant):
-    """Validate that if client has not been setup, it fails immediately in setup."""
-    try:
-        config_entry = MockConfigEntry(
-            data={
-                CONF_ENTRY_HOST: TEST_HOST,
-                CONF_ENTRY_ID: TEST_ID,
-                CONF_ENTRY_NAME: TEST_NAME_ORIGINAL,
-                CONF_ENTRY_MODEL: TEST_MODEL,
-            }
-        )
-        TwinklyLight(config_entry, hass)
-    except ValueError:
-        return
-
-    assert False
-
-
 async def test_initial_state(hass: HomeAssistant):
     """Validate that entity and device states are updated on startup."""
-    entity, device, _ = await _create_entries(hass)
+    entity_entry, device_entry, _ = await _create_entries(hass)
 
-    state = hass.states.get(entity.entity_id)
+    state = hass.states.get(entity_entry.entity_id)
 
     # Basic state properties
-    assert state.name == entity.unique_id
+    assert state.name == entity_entry.unique_id
     assert state.state == "on"
     assert state.attributes["host"] == TEST_HOST
     assert state.attributes["brightness"] == 26
-    assert state.attributes["friendly_name"] == entity.unique_id
+    assert state.attributes["friendly_name"] == entity_entry.unique_id
     assert state.attributes["icon"] == "mdi:string-lights"
 
     # Validates that custom properties of the API device_info are propagated through attributes
-    assert state.attributes["uuid"] == entity.unique_id
+    assert state.attributes["uuid"] == entity_entry.unique_id
 
-    assert entity.original_name == entity.unique_id
-    assert entity.original_icon == "mdi:string-lights"
+    assert entity_entry.original_name == entity_entry.unique_id
+    assert entity_entry.original_icon == "mdi:string-lights"
 
-    assert device.name == entity.unique_id
-    assert device.model == TEST_MODEL
-    assert device.manufacturer == "LEDWORKS"
+    assert device_entry.name == entity_entry.unique_id
+    assert device_entry.model == TEST_MODEL
+    assert device_entry.manufacturer == "LEDWORKS"
 
 
 async def test_initial_state_offline(hass: HomeAssistant):
     """Validate that entity and device are restored from config is offline on startup."""
     client = ClientMock()
     client.is_offline = True
-    entity, device, _ = await _create_entries(hass, client)
+    entity_entry, device_entry, _ = await _create_entries(hass, client)
 
-    state = hass.states.get(entity.entity_id)
+    state = hass.states.get(entity_entry.entity_id)
 
     assert state.name == TEST_NAME_ORIGINAL
     assert state.state == "unavailable"
     assert state.attributes["friendly_name"] == TEST_NAME_ORIGINAL
     assert state.attributes["icon"] == "mdi:string-lights"
 
-    assert entity.original_name == TEST_NAME_ORIGINAL
-    assert entity.original_icon == "mdi:string-lights"
+    assert entity_entry.original_name == TEST_NAME_ORIGINAL
+    assert entity_entry.original_icon == "mdi:string-lights"
 
-    assert device.name == TEST_NAME_ORIGINAL
-    assert device.model == TEST_MODEL
-    assert device.manufacturer == "LEDWORKS"
+    assert device_entry.name == TEST_NAME_ORIGINAL
+    assert device_entry.model == TEST_MODEL
+    assert device_entry.manufacturer == "LEDWORKS"
 
 
 async def test_turn_on(hass: HomeAssistant):
@@ -95,16 +77,16 @@ async def test_turn_on(hass: HomeAssistant):
     client = ClientMock()
     client.is_on = False
     client.brightness = 20
-    entity, _, _ = await _create_entries(hass, client)
+    entity_entry, _, _ = await _create_entries(hass, client)
 
-    assert hass.states.get(entity.entity_id).state == "off"
+    assert hass.states.get(entity_entry.entity_id).state == "off"
 
     await hass.services.async_call(
-        "light", "turn_on", service_data={"entity_id": entity.entity_id}
+        "light", "turn_on", service_data={"entity_id": entity_entry.entity_id}
     )
     await hass.async_block_till_done()
 
-    state = hass.states.get(entity.entity_id)
+    state = hass.states.get(entity_entry.entity_id)
 
     assert state.state == "on"
     assert state.attributes["brightness"] == 51
@@ -115,18 +97,18 @@ async def test_turn_on_with_brightness(hass: HomeAssistant):
     client = ClientMock()
     client.is_on = False
     client.brightness = 20
-    entity, _, _ = await _create_entries(hass, client)
+    entity_entry, _, _ = await _create_entries(hass, client)
 
-    assert hass.states.get(entity.entity_id).state == "off"
+    assert hass.states.get(entity_entry.entity_id).state == "off"
 
     await hass.services.async_call(
         "light",
         "turn_on",
-        service_data={"entity_id": entity.entity_id, "brightness": 255},
+        service_data={"entity_id": entity_entry.entity_id, "brightness": 255},
     )
     await hass.async_block_till_done()
 
-    state = hass.states.get(entity.entity_id)
+    state = hass.states.get(entity_entry.entity_id)
 
     assert state.state == "on"
     assert state.attributes["brightness"] == 255
@@ -134,16 +116,16 @@ async def test_turn_on_with_brightness(hass: HomeAssistant):
 
 async def test_turn_off(hass: HomeAssistant):
     """Test support of the light.turn_off service."""
-    entity, _, _ = await _create_entries(hass)
+    entity_entry, _, _ = await _create_entries(hass)
 
-    assert hass.states.get(entity.entity_id).state == "on"
+    assert hass.states.get(entity_entry.entity_id).state == "on"
 
     await hass.services.async_call(
-        "light", "turn_off", service_data={"entity_id": entity.entity_id}
+        "light", "turn_off", service_data={"entity_id": entity_entry.entity_id}
     )
     await hass.async_block_till_done()
 
-    state = hass.states.get(entity.entity_id)
+    state = hass.states.get(entity_entry.entity_id)
 
     assert state.state == "off"
     assert state.attributes["brightness"] == 0
@@ -157,27 +139,25 @@ async def test_update_name(hass: HomeAssistant):
     then the name of the entity is updated and it's also persisted,
     so it can be restored when starting HA while Twinkly is offline.
     """
-    entity, _, client = await _create_entries(hass)
-
-    updated_config_entry = None
-
-    async def on_update(ha, co):
-        nonlocal updated_config_entry
-        updated_config_entry = co
-
-    hass.config_entries.async_get_entry(entity.unique_id).add_update_listener(on_update)
+    entity_entry, _, client = await _create_entries(hass)
 
     client.change_name("new_device_name")
     await hass.services.async_call(
-        "light", "turn_off", service_data={"entity_id": entity.entity_id}
+        "light", "turn_off", service_data={"entity_id": entity_entry.entity_id}
     )  # We call turn_off which will automatically cause an async_update
     await hass.async_block_till_done()
 
-    state = hass.states.get(entity.entity_id)
-
-    assert updated_config_entry is not None
-    assert updated_config_entry.data[CONF_ENTRY_NAME] == "new_device_name"
-    assert state.attributes["friendly_name"] == "new_device_name"
+    assert hass.config_entries.async_get_entry(entity_entry.entity_id) is not None
+    assert (
+        hass.config_entries.async_get_entry(entity_entry.entity_id).data[
+            CONF_ENTRY_NAME
+        ]
+        == "new_device_name"
+    )
+    assert (
+        hass.states.get(entity_entry.entity_id).attributes["friendly_name"]
+        == "new_device_name"
+    )
 
 
 async def test_unload(hass: HomeAssistant):
@@ -216,10 +196,10 @@ async def _create_entries(
     entity_registry = er.async_get(hass)
 
     entity_id = entity_registry.async_get_entity_id("light", TWINKLY_DOMAIN, client.id)
-    entity = entity_registry.async_get(entity_id)
-    device = device_registry.async_get_device({(TWINKLY_DOMAIN, client.id)})
+    entity_entry = entity_registry.async_get(entity_id)
+    device_entry = device_registry.async_get_device({(TWINKLY_DOMAIN, client.id)})
 
-    assert entity is not None
-    assert device is not None
+    assert entity_entry is not None
+    assert device_entry is not None
 
-    return entity, device, client
+    return entity_entry, device_entry, client

@@ -1,9 +1,9 @@
 """Tests of the initialization of the twinly integration."""
 
+from homeassistant.helpers.entity_registry import EntityRegistry
 from unittest.mock import patch
 from uuid import uuid4
 
-from homeassistant.components.twinkly import async_setup_entry, async_unload_entry
 from homeassistant.components.twinkly.const import (
     CONF_ENTRY_HOST,
     CONF_ENTRY_ID,
@@ -11,7 +11,9 @@ from homeassistant.components.twinkly.const import (
     CONF_ENTRY_NAME,
     DOMAIN as TWINKLY_DOMAIN,
 )
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 
 from tests.common import MockConfigEntry
 from tests.components.twinkly import TEST_HOST, TEST_MODEL, TEST_NAME_ORIGINAL
@@ -32,16 +34,14 @@ async def test_setup_entry(hass: HomeAssistant):
         entry_id=id,
     )
 
-    def setup_mock(_, __):
-        return True
-
     with patch(
         "homeassistant.config_entries.ConfigEntries.async_forward_entry_setup",
-        side_effect=setup_mock,
+        return_value=True,
     ):
-        await async_setup_entry(hass, config_entry)
+        await hass.config_entries.async_add(config_entry)
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
 
-    assert hass.data[TWINKLY_DOMAIN][id] is not None
+    assert er.async_get(hass).async_get(id) is not None
 
 
 async def test_unload_entry(hass: HomeAssistant):
@@ -59,9 +59,13 @@ async def test_unload_entry(hass: HomeAssistant):
         entry_id=id,
     )
 
-    # Put random content at the location where the client should have been placed by setup
-    hass.data.setdefault(TWINKLY_DOMAIN, {})[id] = config_entry
+    with patch(
+        "homeassistant.config_entries.ConfigEntries.async_forward_entry_setup",
+        return_value=True,
+    ):
+        await hass.config_entries.async_add(config_entry)
+        assert await hass.config_entries.async_setup(config_entry.entry_id)
 
-    await async_unload_entry(hass, config_entry)
+        assert await hass.config_entries.async_unload(config_entry.entry_id)
 
-    assert hass.data[TWINKLY_DOMAIN].get(id) is None
+    assert config_entry.state is ConfigEntryState.NOT_LOADED
