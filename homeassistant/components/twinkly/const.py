@@ -1,8 +1,5 @@
 """Const for Twinkly."""
 
-import uuid
-
-
 DOMAIN = "twinkly"
 
 # Keys of the config entry
@@ -19,18 +16,18 @@ DEV_ID = "uuid"
 DEV_NAME = "device_name"
 DEV_MODEL = "product_code"
 DEV_ATTRIBUTES = {
-    # Device identification
+    ### Device identification
     "product_name": str,  # eg. 'Twinkly'
-    # "product_code": str, #eg. 'TWI190SPP', already exposed in the normalized 'model' property
+    # "product_code": str, # Already exposed in the normalized 'model' property, eg. 'TWI190SPP'
     # "device_name": str, # Name given by the user, already exposed in the normalized 'name' property
-    # "uuid": uuid.UUID,  # eg. 'C8D50BDB-5F6E-497D-A64D-57C6FD2E3A2A'
+    # "uuid": uuid.UUID,  # Already exposed as id of the entity eg. 'C8D50BDB-5F6E-497D-A64D-57C6FD2E3A2A'
     "hardware_version": str,  # Received as quoted string, so we keep original format eg. '100'
     "hw_id": str,  # eg. '5f1cfc'
-    # Device status
+    ### Device status
     "uptime": int,  # Received as quoted string, eg. '1527920729'
     "measured_frame_rate": float,  # eg. 28.57
     "fw_family": str,  # eg. 'G'
-    # Flashing information
+    ### Flashing information
     "flash_size": int,  # eg. 64
     "movie_capacity": int,  # eg. 992
     "bytes_per_led": int,  # eg. 4
@@ -40,7 +37,7 @@ DEV_ATTRIBUTES = {
     "led_type": int,  # eg. 12
     "frame_rate": int,  # eg. 24
     "wire_type": int,  # eg. 4
-    # Irrelevant values
+    ### Irrelevant values
     # "copyright" # We should not display a copyright "LEDWORKS 2018" in the Home-Assistant UI
     # "mac" # Does not report the actual device mac address
     # "code" # This is the internal status code of the API response

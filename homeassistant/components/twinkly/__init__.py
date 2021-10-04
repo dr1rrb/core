@@ -24,7 +24,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         host, async_get_clientsession(hass)
     )
 
-    await hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
     return True
 

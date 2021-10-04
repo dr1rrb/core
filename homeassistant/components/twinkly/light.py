@@ -187,12 +187,12 @@ class TwinklyLight(LightEntity):
                     },
                 )
 
-            # for key, value in device_info.items():
-            #     if key in DEV_ATTRIBUTES:
-            #         try:
-            #             self._attributes[key] = DEV_ATTRIBUTES[key](value)
-            #         except (ValueError, TypeError):
-            #             _LOGGER.debug("Unexpected type of %s", key)
+            for key, value in device_info.items():
+                if key in DEV_ATTRIBUTES:
+                    try:
+                        self._attributes[key] = DEV_ATTRIBUTES[key](value)
+                    except (ValueError, TypeError):
+                        _LOGGER.debug("Unexpected type of %s", key)
 
             if not self._is_available:
                 _LOGGER.info("Twinkly '%s' is now available", self._client.host)
