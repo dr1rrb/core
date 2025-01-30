@@ -13,6 +13,15 @@
       "args": ["--debug", "-c", "config"]
     },
     {
+      "name": "Test current file",
+      "type": "python",
+      "request": "launch",
+      "module": "unittest",
+      "cwd": "${workspaceFolder}",
+      "justMyCode": false,
+      "args": ["${file}"]
+    },
+    {
       // Debug by attaching to local Home Asistant server using Remote Python Debugger.
       // See https://www.home-assistant.io/integrations/debugpy/
       "name": "Home Assistant: Attach Local",
